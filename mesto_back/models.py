@@ -20,6 +20,4 @@ class Card(models.Model):
 class Token(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.CharField(max_length=250, default="token")
-    user_id = models.UUIDField(
-        default=uuid.uuid4, editable=False, blank=True, null=True
-    )
+    user_id = models.UUIDField(default=uuid.uuid4)

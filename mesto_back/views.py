@@ -13,6 +13,7 @@ import hashlib
 import uuid
 from django.utils import timezone
 from .tokens.create_tokens import generate_access_token, generate_refresh_token
+from rest_framework import exceptions
 
 SALT = (
     "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b96c8c2855015de8449"
@@ -57,12 +58,37 @@ class CardViewSet(APIView):
             )
 
 
+class UserViewSet(APIView):
+    def get(self, request, format=None):
+        serializer = UserSerializer(request.user)
+        if serializer is None:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Пользователь не найдены",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        else:
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class LoginView(APIView):
     def post(self, request, format=None):
         email = request.data["email"]
         password = request.data["password"]
         hashed_password = make_password(password=password, salt=SALT)
-        user = User.objects.get(email=email)
+        try:
+
+            user = User.objects.get(email=email)
+            print(user)
+
+        except User.MultipleObjectsReturned:
+            raise exceptions.AuthenticationFailed(
+                "пользователь с таким email уже зарегистрирован"
+            )
+
         if user is None or user.password != hashed_password:
             return Response(
                 {
@@ -72,17 +98,15 @@ class LoginView(APIView):
                 status=status.HTTP_200_OK,
             )
         else:
-            access_token = generate_access_token(user)
-            refresh_token = generate_refresh_token(user)
-            token_obj = {
-                "token": refresh_token,
-                "user_id": user.id,
-            }
+            serializer_user = UserSerializer(user, many=False).data
+            access_token = generate_access_token(serializer_user)
+            refresh_token = generate_refresh_token(serializer_user)
+            token_obj = {"token": refresh_token, "user_id": serializer_user["id"]}
             serializer = TokenSerializer(data=token_obj)
-            serializer_user = UserSerializer(user)
+
             if serializer.is_valid():
                 serializer.save()
             return Response(
-                {"token": access_token, "user": serializer_user.data},
+                {"token": access_token, "user": serializer_user},
                 status=status.HTTP_200_OK,
             )
