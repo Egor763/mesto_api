@@ -12,7 +12,7 @@ class User(models.Model):
 
 class Card(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    owner = models.UUIDField(default=uuid.uuid4, editable=False, blank=True, null=True)
+    owner = models.UUIDField(default=uuid.uuid4, blank=True, null=True)
     title = models.CharField(max_length=100)
     link = models.CharField(max_length=300)
 

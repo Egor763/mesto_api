@@ -62,10 +62,10 @@ CORS_ORIGIN_WHITELIST = [
     "http://localhost:3000"  # the domain for front-end app(you can add more than 1)
 ]
 
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ("mesto_back.tokens.auth.SafeJWTAuthentication"),
-    # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-}
+# REST_FRAMEWORK = {
+#     "DEFAULT_AUTHENTICATION_CLASSES": ("mesto_back.tokens.auth.SafeJWTAuthentication"),
+#     # "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+# }
 
 ROOT_URLCONF = "mesto_API.urls"
 

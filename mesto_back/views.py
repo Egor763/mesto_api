@@ -14,6 +14,7 @@ import uuid
 from django.utils import timezone
 from .tokens.create_tokens import generate_access_token, generate_refresh_token
 from rest_framework import exceptions
+from .tokens.auth import SafeJWTAuthentication
 
 SALT = (
     "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b96c8c2855015de8449"
@@ -44,6 +45,7 @@ class RegistrationView(APIView):
 
 class CardViewSet(APIView):
     def get(self, request, format=None):
+
         cards = Card.objects.all()
         if cards:
             serializer_card = CardSerializer(cards, many=True)
@@ -57,9 +59,42 @@ class CardViewSet(APIView):
                 status=status.HTTP_200_OK,
             )
 
+    def post(self, request, format=None):
+        if request.method == "POST":
+            user = SafeJWTAuthentication.authenticate(self, request)[0]
+            title = request.data["title"]
+            link = request.data["link"]
+            serializer_user = UserSerializer(user).data
+
+            card_obj = {"title": title, "link": link, "owner": serializer_user["id"]}
+
+            # data= сохраняем в БД
+            serializer = CardSerializer(data=card_obj)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(card_obj, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Данные карты невалидны",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+
+class CardDeleteViewSet(APIView):
+    def delete(self, request, id, format=None):
+        print("id: ", id)
+        if request.method == "DELETE":
+            user = SafeJWTAuthentication.authenticate(self, request)[0]
+            # SomeModel.objects.filter(id=id).delete()
+
 
 class UserViewSet(APIView):
     def get(self, request, format=None):
+        # проверка токена, нужна для защищенной информации
+        SafeJWTAuthentication.authenticate(self, request)
         serializer = UserSerializer(request.user)
         if serializer is None:
             return Response(
@@ -76,6 +111,7 @@ class UserViewSet(APIView):
 
 class LoginView(APIView):
     def post(self, request, format=None):
+        print("o")
         email = request.data["email"]
         password = request.data["password"]
         hashed_password = make_password(password=password, salt=SALT)
