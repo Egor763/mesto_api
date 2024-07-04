@@ -66,13 +66,19 @@ class CardViewSet(APIView):
             link = request.data["link"]
             serializer_user = UserSerializer(user).data
 
-            card_obj = {"title": title, "link": link, "owner": serializer_user["id"]}
+            card_obj = {
+                "title": title,
+                "link": link,
+                "owner": serializer_user["id"],
+            }
 
             # data= сохраняем в БД
             serializer = CardSerializer(data=card_obj)
             if serializer.is_valid():
                 serializer.save()
-                return Response(card_obj, status=status.HTTP_200_OK)
+                card = Card.objects.get(title=title)
+                serializer_card = CardSerializer(card).data
+                return Response(serializer_card, status=status.HTTP_200_OK)
             else:
                 return Response(
                     {
@@ -85,10 +91,14 @@ class CardViewSet(APIView):
 
 class CardDeleteViewSet(APIView):
     def delete(self, request, id, format=None):
+        cards = Card.objects.all()
         print("id: ", id)
         if request.method == "DELETE":
             user = SafeJWTAuthentication.authenticate(self, request)[0]
-            # SomeModel.objects.filter(id=id).delete()
+            if cards:
+                Card.objects.filter(id=id).delete()
+                serializer = CardSerializer(cards, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserViewSet(APIView):

@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 import uuid
 
@@ -15,6 +16,9 @@ class Card(models.Model):
     owner = models.UUIDField(default=uuid.uuid4, blank=True, null=True)
     title = models.CharField(max_length=100)
     link = models.CharField(max_length=300)
+    likes = ArrayField(
+        models.UUIDField(default=uuid.uuid4, blank=True, null=True), default=[]
+    )
 
 
 class Token(models.Model):
