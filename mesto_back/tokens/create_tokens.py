@@ -3,7 +3,9 @@ import jwt
 from django.conf import settings
 
 
+# функция добавления access_token
 def generate_access_token(user):
+    # словарь access_token
     access_token_payload = {
         "user_id": user["id"],
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=30),
@@ -15,7 +17,9 @@ def generate_access_token(user):
     return access_token
 
 
+# функция добавления refresh_token
 def generate_refresh_token(user):
+    # словарь refresh_token
     refresh_token_payload = {
         "user_id": user["id"],
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),

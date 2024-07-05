@@ -19,8 +19,10 @@ class SafeJWTAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         # User = get_user_model()
+        # добавление header Authorization
         authorization_heaader = request.headers.get("Authorization")
 
+        # если нет authorization_header, то возвращается None
         if not authorization_heaader:
             return None
         try:
@@ -30,13 +32,16 @@ class SafeJWTAuthentication(BaseAuthentication):
                 access_token, settings.SECRET_KEY, algorithms=["HS256"]
             )
 
+        # вывод ошибки 403 истечение токена
         except jwt.ExpiredSignatureError:
             raise exceptions.AuthenticationFailed("токен истек")
         except IndexError:
             raise exceptions.AuthenticationFailed("Token prefix missing")
 
+        # ищется id по первому пользователю
         user = User.objects.filter(id=payload["user_id"]).first()
         if user is None:
+            # вывод ошибки пользователь не ненайден
             raise exceptions.AuthenticationFailed("Пользователь не найден")
 
         # self.enforce_csrf(request)
