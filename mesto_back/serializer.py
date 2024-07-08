@@ -15,7 +15,14 @@ class CardSerializer(serializers.ModelSerializer):
     # обязательный класс Meta
     class Meta:
         model = Card
-        fields = ("id", "title", "link", "owner")
+        fields = ("id", "title", "link", "owner", "likes")
+
+    # для обновления элементов в БД
+    def update(self, instance, validated_data):
+        # добавляются поля которые будут обновлятся
+        instance.likes = validated_data.get("likes", instance.likes)
+        instance.save()
+        return instance
 
 
 # сериализатор токена

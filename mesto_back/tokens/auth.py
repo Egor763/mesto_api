@@ -4,6 +4,7 @@ from django.middleware.csrf import CsrfViewMiddleware
 from rest_framework import exceptions
 from django.conf import settings
 from ..models import User
+from ..serializer import UserSerializer
 
 # class CSRFCheck(CsrfViewMiddleware):
 #     def _reject(self, request, reason):
@@ -45,8 +46,11 @@ class SafeJWTAuthentication(BaseAuthentication):
             raise exceptions.AuthenticationFailed("Пользователь не найден")
 
         # self.enforce_csrf(request)
-        request.user = user
-        return (user, None)
+        serializer_user = UserSerializer(user).data
+        request.user = serializer_user
+
+        # print(request.user)
+        return (serializer_user, None)
 
     # def enforce_csrf(self, request):
     #     """

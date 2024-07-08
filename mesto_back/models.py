@@ -19,7 +19,10 @@ class Card(models.Model):
     title = models.CharField(max_length=100)
     link = models.CharField(max_length=300)
     likes = ArrayField(
-        models.UUIDField(default=uuid.uuid4, blank=True, null=True), default=[]
+        models.UUIDField(blank=True, null=True),
+        default=list,
+        blank=True,
+        null=True,
     )
 
 

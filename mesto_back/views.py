@@ -100,7 +100,6 @@ class CardViewSet(APIView):
 class CardDeleteViewSet(APIView):
     def delete(self, request, id, format=None):
         cards = Card.objects.all()
-        print("id: ", id)
         if request.method == "DELETE":
             user = SafeJWTAuthentication.authenticate(self, request)[0]
             # если карточки есть, то карточка удаляется по id
@@ -110,13 +109,81 @@ class CardDeleteViewSet(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class CardLikeViewSet(APIView):
+    def put(self, request, id, format=None):
+        if request.method == "PUT":
+            user = SafeJWTAuthentication.authenticate(self, request)[0]
+
+            # получаем нужную карточку из БД по id из запроса
+            card = Card.objects.get(id=id)
+            # переводим ее в json
+            serializer = CardSerializer(card).data
+
+            # проводим нужные изменения
+            likes = request.data["likes"]
+            likes.append(user["id"])
+
+            # сохраняем изменения в карточки (json)
+            serializer["likes"] = likes
+
+            # сериализуем с помощью функции update сериализатора для этого первым аргументом передается карточка (python) вторым
+            # аргументом присваеваем data карточку (json) третьим аргументом partial=True если нужно обновить не все поля
+            # сравнивает две карточки если есть изменения сохраняет в БД
+            serializer_card = CardSerializer(card, data=serializer, partial=True)
+            if serializer_card.is_valid():
+                serializer_card.save()
+                # возвращаем карточку (json)
+                return Response(serializer, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Данные карты невалидны",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+    def delete(self, request, id, format=None):
+        if request.method == "DELETE":
+            user = SafeJWTAuthentication.authenticate(self, request)[0]
+
+            # получаем нужную карточку из БД по id из запроса
+            card = Card.objects.get(id=id)
+            # переводим ее в json
+            serializer = CardSerializer(card).data
+
+            likes = serializer["likes"]
+            new_likes = [x for x in likes if x != user["id"]]
+
+            print(new_likes)
+            # сохраняем изменения в карточки (json)
+            serializer["likes"] = new_likes
+
+            # сериализуем с помощью функции update сериализатора для этого первым аргументом передается карточка (python) вторым
+            # аргументом присваеваем data карточку (json) третьим аргументом partial=True если нужно обновить не все поля
+            # сравнивает две карточки если есть изменения сохраняет в БД
+            serializer_card = CardSerializer(card, data=serializer, partial=True)
+            if serializer_card.is_valid():
+                serializer_card.save()
+                # возвращаем карточку (json)
+                return Response(serializer, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Данные карты невалидны",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+
 class UserViewSet(APIView):
     def get(self, request, format=None):
         # проверка токена, нужна для защищенной информации
         SafeJWTAuthentication.authenticate(self, request)
-        serializer = UserSerializer(request.user)
+        user = request.user
         # если сериализатора нет, то возвращается ответ с ключом False со статусом 200 OK
-        if serializer is None:
+        if user is None:
             return Response(
                 {
                     "success": False,
@@ -127,19 +194,17 @@ class UserViewSet(APIView):
 
         # если сериализатор есть, то возвращается ответ с данными сериализатора со статусом 200 OK
         else:
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(user, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):
     def post(self, request, format=None):
-        print("o")
         email = request.data["email"]
         password = request.data["password"]
         hashed_password = make_password(password=password, salt=SALT)
         try:
 
             user = User.objects.get(email=email)
-            print(user)
         # если пользователь с таким email уже есть то возникает ошибка
         except User.MultipleObjectsReturned:
             raise exceptions.AuthenticationFailed(

@@ -7,6 +7,7 @@ from .views import (
     LoginView,
     UserViewSet,
     CardDeleteViewSet,
+    CardLikeViewSet,
 )
 from . import views
 
@@ -17,6 +18,7 @@ urlpatterns = [
     path("cards", CardViewSet.as_view(), name="cards"),
     # добавление карточки id
     path("cards/<uuid:id>", CardDeleteViewSet.as_view(), name="cards_delete"),
+    path("cards/<uuid:id>/likes", CardLikeViewSet.as_view(), name="likes"),
     path("users/me", UserViewSet.as_view(), name="users"),
     path("signup", RegistrationView.as_view(), name="register"),
     path("signin", LoginView.as_view(), name="login"),
