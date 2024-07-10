@@ -50,7 +50,7 @@ class SafeJWTAuthentication(BaseAuthentication):
         request.user = serializer_user
 
         # print(request.user)
-        return (serializer_user, None)
+        return (serializer_user, user)
 
     # def enforce_csrf(self, request):
     #     """
