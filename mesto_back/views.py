@@ -157,9 +157,21 @@ class CardLikeViewSet(APIView):
 
 
 class UserViewSet(APIView):
-    def get(self, request, format=None):
+    def get(self, request, id, format=None):
         # проверка токена, нужна для защищенной информации
-        SafeJWTAuthentication.authenticate(self, request)
+        # SafeJWTAuthentication.authenticate(self, request)
+
+        # вставка без авторизации ======================================
+        user = User.objects.filter(id=id).first()
+        if user is None:
+            # вывод ошибки пользователь не ненайден
+            raise exceptions.AuthenticationFailed("Пользователь не найден")
+
+        # self.enforce_csrf(request)
+        serializer_user = UserSerializer(user).data
+        request.user = serializer_user
+        # ========================================================
+
         user = request.user
         # если сериализатора нет, то возвращается ответ с ключом False со статусом 200 OK
         if user is None:
@@ -176,17 +188,28 @@ class UserViewSet(APIView):
             del user["password"]
             return Response(user, status=status.HTTP_200_OK)
 
-    def patch(self, request, format=None):
+    def patch(self, request, id, format=None):
         if request.method == "PATCH":
-            user_data = SafeJWTAuthentication.authenticate(self, request)
-            user = user_data[0]
+            # user_data = SafeJWTAuthentication.authenticate(self, request)
+            # user = user_data[0]
+            # вставка без авторизации ======================================
+            user_db = User.objects.filter(id=id).first()
+            if user_db is None:
+                # вывод ошибки пользователь не ненайден
+                raise exceptions.AuthenticationFailed("Пользователь не найден")
+
+            # self.enforce_csrf(request)
+            user = UserSerializer(user_db).data
+            # ========================================================
             name = request.data["name"]
             about = request.data["about"]
 
             user["name"] = name
             user["about"] = about
 
-            serializer_user = UserSerializer(user_data[1], data=user, partial=True)
+            # serializer_user = UserSerializer(user_data[1], data=user, partial=True)
+            serializer_user = UserSerializer(user_db, data=user, partial=True)
+
             if serializer_user.is_valid():
                 serializer_user.save()
                 del user["password"]
