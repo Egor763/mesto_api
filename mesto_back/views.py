@@ -226,15 +226,23 @@ class UserViewSet(APIView):
 
 
 class UserAddAvatarViewSet(APIView):
-    def patch(self, request, format=None):
-        user_data = SafeJWTAuthentication.authenticate(self, request)
-        user = user_data[0]
+    def patch(self, request, id, format=None):
+        # user_data = SafeJWTAuthentication.authenticate(self, request)
+        # user = user_data[0]
+
+        user_bd = User.objects.filter(id=id).first()
+
+        if user_bd is None:
+            raise exceptions.AuthenticationFailed("Пользователь не найден")
+
+        user = UserSerializer(user_bd).data
 
         avatar = request.data["avatar"]
 
         user["avatar"] = avatar
+        print(user)
 
-        serializer = UserSerializer(user_data[1], data=user, partial=True)
+        serializer = UserSerializer(user_bd, data=user, partial=True)
 
         if serializer.is_valid():
             serializer.save()
