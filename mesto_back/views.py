@@ -22,6 +22,20 @@ class RegistrationView(APIView):
         request.data["password"] = make_password(
             password=request.data["password"], salt=SALT
         )
+
+        email = request.data["email"]
+
+        user = User.objects.filter(email=email).first()
+
+        if user:
+            return Response(
+                {
+                    "success": False,
+                    "message": "пользователь с таким email уже зарегистрирован",
+                },
+                status=status.HTTP_200_OK,
+            )
+
         serializer = UserSerializer(data=request.data)
         # если сериализатор валидный то он сохраняется и возвращается ответ с ключом True со статусом 200 OK
         if serializer.is_valid():
