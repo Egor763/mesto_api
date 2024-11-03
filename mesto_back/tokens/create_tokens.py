@@ -30,3 +30,10 @@ def generate_refresh_token(user):
     )
 
     return refresh_token
+
+
+def check_access_token(token):
+    payload = jwt.decode(jwt=token, key=settings.SECRET_KEY, algorithms=["HS256"])
+
+    if payload:
+        return payload

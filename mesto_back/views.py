@@ -5,7 +5,11 @@ from rest_framework.views import APIView
 from .models import User, Card
 
 from .serializer import UserSerializer, TokenSerializer, CardSerializer
-from .tokens.create_tokens import generate_access_token, generate_refresh_token
+from .tokens.create_tokens import (
+    generate_access_token,
+    generate_refresh_token,
+    check_access_token,
+)
 from rest_framework import exceptions
 from .tokens.auth import SafeJWTAuthentication
 
@@ -40,8 +44,28 @@ class RegistrationView(APIView):
         # если сериализатор валидный то он сохраняется и возвращается ответ с ключом True со статусом 200 OK
         if serializer.is_valid():
             serializer.save()
+            user_db = User.objects.filter(email=email).first()
+
+            serializer_user = UserSerializer(user_db).data
+
+            access_token = generate_access_token(serializer_user)
+            refresh_token = generate_refresh_token(serializer_user)
+            token_obj = {
+                "token": refresh_token,
+                "user_id": serializer_user["id"],
+            }
+            serializer_token = TokenSerializer(data=token_obj)
+
+            if serializer_token.is_valid():
+                serializer_token.save()
+
             return Response(
-                {"success": True, "message": "You are now registered on our website!"},
+                {
+                    "success": True,
+                    "user": serializer_user,
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                },
                 status=status.HTTP_200_OK,
             )
         # если сериализатор не валидный то возвращается ответ с ключом False со статусом 200 OK
@@ -52,6 +76,48 @@ class RegistrationView(APIView):
                 error_msg += serializer.errors[key][0]
             return Response(
                 {"success": False, "message": error_msg},
+                status=status.HTTP_200_OK,
+            )
+
+
+class LoginView(APIView):
+    def post(self, request, format=None):
+        email = request.data["email"]
+        password = request.data["password"]
+        token = request.headers["authorization"]
+        token_payload = check_access_token(token)
+        print(token_payload)
+        hashed_password = make_password(password=password, salt=SALT)
+        try:
+
+            user = User.objects.get(email=email)
+        # если пользователь с таким email уже есть то возникает ошибка
+        except User.MultipleObjectsReturned:
+            raise exceptions.AuthenticationFailed(
+                "пользователь с таким email уже зарегистрирован"
+            )
+
+        # если пользователя нет или пароль не равен хэшированному паролю, то возвращается ответ с сключом False со статусом 200 OK
+        if user is None or user.password != hashed_password:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Нет такого пользователя",
+                },
+                status=status.HTTP_200_OK,
+            )
+        else:
+            serializer_user = UserSerializer(user, many=False).data
+            del serializer_user["password"]
+            access_token = generate_access_token(serializer_user)
+            refresh_token = generate_refresh_token(serializer_user)
+            token_obj = {"token": refresh_token, "user_id": serializer_user["id"]}
+            serializer = TokenSerializer(data=token_obj)
+
+            if serializer.is_valid():
+                serializer.save()
+            return Response(
+                {"token": access_token, "user": serializer_user},
                 status=status.HTTP_200_OK,
             )
 
@@ -265,44 +331,5 @@ class UserAddAvatarViewSet(APIView):
         else:
             return Response(
                 {"success": False, "message": "Аватар не обновился"},
-                status=status.HTTP_200_OK,
-            )
-
-
-class LoginView(APIView):
-    def post(self, request, format=None):
-        email = request.data["email"]
-        password = request.data["password"]
-        hashed_password = make_password(password=password, salt=SALT)
-        try:
-
-            user = User.objects.get(email=email)
-        # если пользователь с таким email уже есть то возникает ошибка
-        except User.MultipleObjectsReturned:
-            raise exceptions.AuthenticationFailed(
-                "пользователь с таким email уже зарегистрирован"
-            )
-
-        # если пользователя нет или пароль не равен хэшированному паролю, то возвращается ответ с сключом False со статусом 200 OK
-        if user is None or user.password != hashed_password:
-            return Response(
-                {
-                    "success": False,
-                    "message": "Нет такого пользователя",
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            serializer_user = UserSerializer(user, many=False).data
-            del serializer_user["password"]
-            access_token = generate_access_token(serializer_user)
-            refresh_token = generate_refresh_token(serializer_user)
-            token_obj = {"token": refresh_token, "user_id": serializer_user["id"]}
-            serializer = TokenSerializer(data=token_obj)
-
-            if serializer.is_valid():
-                serializer.save()
-            return Response(
-                {"token": access_token, "user": serializer_user},
                 status=status.HTTP_200_OK,
             )
