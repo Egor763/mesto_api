@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,10 +58,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# CORS_ORIGIN_ALLOW_ALL = False
+
+# CORS_ALLOW_HEADERS = default_headers + ("Access-Control-Allow-Origin",)
 
 # CORS_ALLOW_CREDENTIALS = True # to accept cookies via ajax request
 CORS_ORIGIN_WHITELIST = [
-    "http://localhost:3000"  # the domain for front-end app(you can add more than 1)
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",  # the domain for front-end app(you can add more than 1)
 ]
 
 # REST_FRAMEWORK = {

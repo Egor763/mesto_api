@@ -1,8 +1,12 @@
+import jwt
+from django.conf import settings
+
+
 from django.contrib.auth.hashers import make_password
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User
+from .models import User, Token
 
 from .serializer import UserSerializer, TokenSerializer
 from .tokens.create_tokens import (
@@ -46,8 +50,8 @@ class RegistrationView(APIView):
 
             serializer_user = UserSerializer(user_db).data
 
-            access_token = generate_access_token(serializer_user)
-            refresh_token = generate_refresh_token(serializer_user)
+            access_token = generate_access_token(serializer_user["id"])
+            refresh_token = generate_refresh_token(serializer_user["id"])
             token_obj = {
                 "token": refresh_token,
                 "user_id": serializer_user["id"],
@@ -110,28 +114,71 @@ class LoginView(APIView):
         else:
             # serializer_user = UserSerializer(user, many=False).data
             del user["password"]
-            access_token = generate_access_token(user)
-            refresh_token = generate_refresh_token(user)
-            token_obj = {
-                "token": refresh_token,
-                "user_id": user["id"],
-            }
-            serializer = TokenSerializer(data=token_obj)
+            token = Token.objects.filter(user_id=user["id"]).first()
 
-            if serializer.is_valid():
-                serializer.save()
+            serializer = TokenSerializer(token).data
+            access_token = generate_access_token(user["id"])
+            if token:
+
+                return Response(
+                    {
+                        "success": True,
+                        "user": user,
+                        "access_token": access_token,
+                        "refresh_token": serializer["token"],
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            else:
+                refresh_token = generate_refresh_token(user["id"])
+                token_obj = {
+                    "token": refresh_token,
+                    "user_id": user["id"],
+                }
+                serializer = TokenSerializer(data=token_obj)
+
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(
+                        {
+                            "success": True,
+                            "user": user,
+                            "access_token": access_token,
+                            "refresh_token": refresh_token,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
+
+class RefreshToken(APIView):
+    def post(self, request, format=None):
+
+        refresh = request.data["refresh"]
+
+        user_id = request.data["userId"]
+
+        token = Token.objects.filter(user_id=user_id).first()
+
+        serializer = TokenSerializer(token).data
+        print(serializer["token"])
+        print(refresh)
+
+        if serializer["token"] == refresh:
+            print("валидный")
+            access_token = generate_access_token(user_id)
             return Response(
                 {
                     "success": True,
-                    "user": user,
                     "access_token": access_token,
-                    "refresh_token": refresh_token,
                 },
                 status=status.HTTP_200_OK,
             )
 
-
-class RefreshToken(APIView):
-    def get(self, request, format=None):
-        refresh = request.headers("refresh")
-        print(refresh)
+        else:
+            return Response(
+                {
+                    "success": False,
+                },
+                status=status.HTTP_200_OK,
+            )

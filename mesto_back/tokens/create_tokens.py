@@ -4,10 +4,10 @@ from django.conf import settings
 
 
 # функция добавления access_token
-def generate_access_token(user):
+def generate_access_token(id):
     # словарь access_token
     access_token_payload = {
-        "user_id": user["id"],
+        "user_id": id,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=20),
         # "iat": datetime.datetime.utcnow(),
     }
@@ -18,10 +18,10 @@ def generate_access_token(user):
 
 
 # функция добавления refresh_token
-def generate_refresh_token(user):
+def generate_refresh_token(id):
     # словарь refresh_token
     refresh_token_payload = {
-        "user_id": user["id"],
+        "user_id": id,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=30),
         "iat": datetime.datetime.utcnow(),
     }
