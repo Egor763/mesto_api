@@ -42,7 +42,7 @@ class CardViewSet(APIView):
             serializer = CardSerializer(data=card_obj)
             if serializer.is_valid():
                 serializer.save()
-                card = Card.objects.get(owner=user["id"])
+                card = Card.objects.get(link=link)
                 serializer_card = CardSerializer(card).data
                 return Response(serializer_card, status=status.HTTP_200_OK)
             else:
@@ -62,9 +62,14 @@ class CardDeleteViewSet(APIView):
             SafeJWTAuthentication.authenticate(self, request)[0]
             # если карточки есть, то карточка удаляется по id
             if cards:
-                Card.objects.filter(id=id).delete()
-                serializer = CardSerializer(cards, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                card = Card.objects.filter(id=id).delete()
+                print(card)
+                if card:
+                    # serializer = CardSerializer(cards, many=True)
+                    return Response(card, status=status.HTTP_200_OK)
+
+                else:
+                    return Response(None, status=status.HTTP_200_OK)
 
 
 class CardLikeViewSet(APIView):

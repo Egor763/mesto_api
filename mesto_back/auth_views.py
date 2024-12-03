@@ -161,11 +161,8 @@ class RefreshToken(APIView):
         token = Token.objects.filter(user_id=user_id).first()
 
         serializer = TokenSerializer(token).data
-        print(serializer["token"])
-        print(refresh)
 
         if serializer["token"] == refresh:
-            print("валидный")
             access_token = generate_access_token(user_id)
             return Response(
                 {
