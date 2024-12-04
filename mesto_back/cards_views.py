@@ -102,12 +102,12 @@ class CardLikeViewSet(APIView):
         if request.method == "PUT":
             user, card, serializer = self._get_user(request, id)
 
-            # проводим нужные изменения
-            likes = request.data["likes"]
-            likes.append(user["id"])
+            # # проводим нужные изменения
+            # likes = request.data["likes"]
+            # likes.append(user["id"])
 
-            # сохраняем изменения в карточки (json)
-            serializer["likes"] = likes
+            # # сохраняем изменения в карточки (json)
+            # serializer["likes"] = likes
 
             result = self._update_data(card, serializer)
             return Response(result, status=status.HTTP_200_OK)
