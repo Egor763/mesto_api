@@ -89,12 +89,12 @@ class CardLikeViewSet(APIView):
         if serializer_card.is_valid():
             serializer_card.save()
             # возвращаем карточку (json)
-            return serializer
+            return {"success": True, "data": serializer}
         else:
             return (
                 {
                     "success": False,
-                    "message": "Данные карты невалидны",
+                    "data": None,
                 },
             )
 
@@ -103,11 +103,9 @@ class CardLikeViewSet(APIView):
             user, card, serializer = self._get_user(request, id)
 
             # # проводим нужные изменения
-            # likes = request.data["likes"]
-            # likes.append(user["id"])
+            serializer["likes"].append(user["id"])
 
-            # # сохраняем изменения в карточки (json)
-            # serializer["likes"] = likes
+            # сохраняем изменения в карточки (json)
 
             result = self._update_data(card, serializer)
             return Response(result, status=status.HTTP_200_OK)
